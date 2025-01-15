@@ -1852,7 +1852,7 @@
       (assoc-in compiled-schema [object-name :fields] merged-fields))))
 
 (defn ^:private compile-directive-defs
-  [schema directive-defs]
+  [schema directive-defs extensions]
   (let [compile-directive-arg (fn [directive-type arg-name arg-def]
                                 (let [arg-def' (compile-arg arg-name arg-def)
                                       arg-type-name (extract-type-name arg-def')
@@ -1871,14 +1871,31 @@
                                               :qualified-name (qualified-name nil directive-type arg-name))]))
         compile-directive-args (fn [directive-type directive-def]
                                  [directive-type (-> directive-def
-                                                     (assoc :directive-type directive-type)
-                                                     (update :args (fn [args]
-                                                                     (map-kvs #(compile-directive-arg directive-type %1 %2) args))))])]
+                                                   (assoc :directive-type directive-type)
+                                                   (update :args (fn [args]
+                                                                   (map-kvs #(compile-directive-arg directive-type %1 %2) args))))])
+        imported-directives (->> extensions
+                              :schema
+                              :directives
+                                 ;; Filter for @link and extract its "import" argument
+                              (filter #(= (:directive-type %) :link))
+                              first ;; Assuming one @link directive
+                              :directive-args
+                              :import ;; Extract the imported directives
+                                 ;; Convert to a map with basic definitions for each imported directive
+                              (reduce (fn [acc directive]
+                                        (assoc acc
+                                                  ;; Convert string to keyword for consistency
+                                          (keyword (subs directive 1))
+                                                  ;; Basic definition for each imported directive
+                                          {:locations #{:object :interface :field-definition}}))
+                                {}))]
     (assoc schema ::directive-defs
-                  (map-kvs compile-directive-args
-                    (assoc directive-defs
-                      :deprecated {:args {:reason {:type 'String}}
-                                   :locations #{:argument-definition :enum-value :field-definition :input-field-definition}})))))
+      (map-kvs compile-directive-args
+        (merge directive-defs
+          imported-directives
+          {:deprecated {:args {:reason {:type 'String}}
+                        :locations #{:argument-definition :enum-value :field-definition :input-field-definition}}})))))
 
 (defn ^:private validate-directives-by-category
   [schema category]
@@ -1950,8 +1967,8 @@
       (add-root subscription :subscriptions (:subscriptions schema))
       (apply-default-subscription-resolver subscription)
       (as-> s
-        (map-vals #(compile-type % s) s))
-      (compile-directive-defs (:directive-defs schema))
+            (map-vals #(compile-type % s) s))
+      (compile-directive-defs (:directive-defs schema) (:extensions schema))
       (prepare-and-validate-interfaces)
       (prepare-and-validate-objects :object)
       (prepare-and-validate-objects :input-object)
