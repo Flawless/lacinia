@@ -1,4 +1,10 @@
 # Changing this will probably break tests.
+extend schema
+  @link(
+    url: "https://specs.apollo.dev/federation/v2.6"
+    import: ["@key", "@authenticated", "@extends", "@external"]
+  )
+
 enum episode {
   NEWHOPE
   EMPIRE

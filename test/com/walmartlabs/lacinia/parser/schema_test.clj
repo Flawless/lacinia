@@ -398,7 +398,13 @@
                                                      :MyQuery/in_episode "Find all characters for a given episode"
                                                      :MyQuery/in_episode.episode "Episode for which to find characters"}})]
     (testing "parsing"
-      (is (= {:directive-defs {:Trace {:args {:label {:type '(non-null String)}}
+      (is (= {:extensions {:schema
+                           {:directives
+                            [{:directive-type :link,
+                              :directive-args
+                              {:url "https://specs.apollo.dev/federation/v2.6",
+                               :import ["@key" "@authenticated" "@extends" "@external"]}}]}}
+              :directive-defs {:Trace {:args {:label {:type '(non-null String)}}
                                        :description "Extra tracing of field operations"
                                        :locations #{:field-definition}}}
               :enums {:episode {:values [{:enum-value :NEWHOPE}

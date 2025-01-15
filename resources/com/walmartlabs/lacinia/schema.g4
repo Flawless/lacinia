@@ -1,12 +1,16 @@
 grammar GraphqlSchema;
 
 graphqlSchema
-  : (schemaDef|typeDef|typeExtDef|inputTypeDef|inputTypeExtDef|unionDef|unionExtDef|enumDef|interfaceDef|scalarDef|directiveDef)*
+  : (schemaExtDef|schemaDef|typeDef|typeExtDef|inputTypeDef|inputTypeExtDef|unionDef|unionExtDef|enumDef|interfaceDef|scalarDef|directiveDef)*
   ;
 
 description
   : StringValue
   | BlockStringValue
+  ;
+
+schemaExtDef
+  : K_EXTEND K_SCHEMA directiveList? ('{' operationTypeDef+ '}')?
   ;
 
 schemaDef

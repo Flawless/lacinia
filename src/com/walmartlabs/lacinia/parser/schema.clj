@@ -196,6 +196,16 @@
                   ;; Temporary location until patch-schema-directives is invoked
                   (apply-directives directiveList))]))
 
+(defmethod xform :schemaExtDef
+  [prod]
+  ;; prod looks like:
+  ;; [:schemaExtDef (:'extend' "extend") (:'schema' "schema") optional-directiveList? ...]
+  (let [[_ _ _ & sub-prods] prod
+        directiveList (some #(when (= :directiveList (first %)) %) sub-prods)]
+    [[:extensions :schema]
+     (cond-> {}
+       directiveList (assoc :directives (xform directiveList)))]))
+
 (defn ^:private patch-schema-directives
   [schema]
   (if-let [directives (get-in schema [:roots :directives])]
